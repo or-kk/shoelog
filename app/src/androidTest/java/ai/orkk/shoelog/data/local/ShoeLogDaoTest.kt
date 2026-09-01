@@ -75,7 +75,7 @@ class ShoeLogDaoTest {
         dao.upsertExercises(listOf(exercise(id = "health-connect-id", distanceMeters = 8_000)))
 
         assertEquals(1, dao.exerciseCount())
-        assertEquals(8_000, dao.exerciseById("health-connect-id")?.distanceMeters)
+        assertEquals(8_000L, dao.exerciseById("health-connect-id")?.distanceMeters)
     }
 
     private fun shoe(
