@@ -4,19 +4,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import ai.orkk.shoelog.ui.ShoeLogApp
 import ai.orkk.shoelog.ui.theme.ShoeLogTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val container = (application as ShoeLogApplication).container
         setContent {
             ShoeLogTheme {
-                Surface {
-                    Text(text = "ShoeLog")
-                }
+                ShoeLogApp(container = container)
             }
         }
     }
