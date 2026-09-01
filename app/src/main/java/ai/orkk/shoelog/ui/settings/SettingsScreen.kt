@@ -37,6 +37,7 @@ data class SettingsUiState(
     val basePermissionsGranted: Boolean = false,
     val historyAvailable: Boolean = false,
     val historyGranted: Boolean = false,
+    val notificationsGranted: Boolean = false,
     val autoAssignDefault: Boolean = false,
     val sampleMode: Boolean = false,
     val isSyncing: Boolean = false,
@@ -52,6 +53,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
             basePermissionsGranted = operation.grantedPermissions.containsAll(container.healthConnectDataSource.requiredPermissions),
             historyAvailable = container.healthConnectDataSource.historyFeatureAvailable(),
             historyGranted = HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY in operation.grantedPermissions,
+            notificationsGranted = operation.notificationsGranted,
             autoAssignDefault = settings.autoAssignDefault,
             sampleMode = settings.sampleMode,
             isSyncing = operation.syncing,
@@ -60,6 +62,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     init {
+        operation.value = operation.value.copy(notificationsGranted = container.notificationManager.canNotify())
         refreshPermissions()
     }
 
@@ -75,6 +78,10 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
 
     fun setAutoAssign(enabled: Boolean) {
         viewModelScope.launch { container.settingsRepository.setAutoAssignDefault(enabled) }
+    }
+
+    fun refreshNotificationPermission() {
+        operation.value = operation.value.copy(notificationsGranted = container.notificationManager.canNotify())
     }
 
     fun setSampleMode(enabled: Boolean) {
@@ -106,6 +113,7 @@ class SettingsViewModel(private val container: AppContainer) : ViewModel() {
 
     private data class OperationState(
         val grantedPermissions: Set<String> = emptySet(),
+        val notificationsGranted: Boolean = false,
         val syncing: Boolean = false,
         val message: String? = null,
     )
@@ -126,6 +134,7 @@ fun SettingsScreen(
     onSync: () -> Unit,
     onAutoAssignChange: (Boolean) -> Unit,
     onSampleModeChange: (Boolean) -> Unit,
+    onRequestNotifications: () -> Unit = {},
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -186,6 +195,16 @@ fun SettingsScreen(
                     enabled = state.historyAvailable && !state.historyGranted,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(if (state.historyGranted) "과거 기록 권한 허용됨" else "30일 이전 기록 권한 요청") }
+            }
+        }
+        item {
+            SettingsCard("미배정 달리기 알림") {
+                Text("앱 동기화 중 새 미배정 달리기를 발견하면 알려줍니다.")
+                Button(
+                    onClick = onRequestNotifications,
+                    enabled = !state.notificationsGranted,
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (state.notificationsGranted) "알림 허용됨" else "알림 허용") }
             }
         }
         item {

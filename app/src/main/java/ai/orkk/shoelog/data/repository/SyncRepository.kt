@@ -28,6 +28,10 @@ interface SyncSettings {
     suspend fun current(): AppSettings
 }
 
+fun interface UnassignedRunNotifier {
+    fun notifyUnassigned(exerciseIds: Set<String>)
+}
+
 class StaticSyncSettings(private val value: AppSettings) : SyncSettings {
     override suspend fun current(): AppSettings = value
 }
@@ -93,6 +97,7 @@ class SyncRepository(
     private val store: ExerciseSyncStore,
     private val settings: SyncSettings,
     private val clock: Clock = Clock.systemUTC(),
+    private val notifier: UnassignedRunNotifier = UnassignedRunNotifier { },
 ) {
     suspend fun sync(now: Instant = clock.instant()): SyncResult {
         return try {
@@ -156,12 +161,14 @@ class SyncRepository(
                     autoAssigned += exercise.id
                 }
             }
-            SyncResult.Success(
+            val result = SyncResult.Success(
                 newExerciseIds = newIds,
                 autoAssignedIds = autoAssigned,
                 unassignedNewIds = newIds - autoAssigned,
                 syncedAt = now,
             )
+            if (result.unassignedNewIds.isNotEmpty()) notifier.notifyUnassigned(result.unassignedNewIds)
+            result
         } catch (_: SecurityException) {
             SyncResult.PermissionRequired(health.requiredPermissions)
         } catch (_: Exception) {

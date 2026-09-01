@@ -1,6 +1,8 @@
 package ai.orkk.shoelog.ui
 
+import android.Manifest
 import android.content.Intent
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -68,10 +70,16 @@ private val mainDestinations = listOf(
 )
 
 @Composable
-fun ShoeLogApp(container: AppContainer) {
+fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+
+    LaunchedEffect(initialExerciseId) {
+        if (!initialExerciseId.isNullOrBlank()) {
+            navController.navigate(Routes.exercises(initialExerciseId))
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -199,6 +207,9 @@ fun ShoeLogApp(container: AppContainer) {
                 val healthPermissionLauncher = rememberLauncherForActivityResult(
                     PermissionController.createRequestPermissionResultContract(),
                 ) { granted -> settingsViewModel.refreshPermissions(granted) }
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { settingsViewModel.refreshNotificationPermission() }
                 SettingsScreen(
                     state = state,
                     onRequestPermissions = {
@@ -210,6 +221,13 @@ fun ShoeLogApp(container: AppContainer) {
                     onSync = settingsViewModel::sync,
                     onAutoAssignChange = settingsViewModel::setAutoAssign,
                     onSampleModeChange = settingsViewModel::setSampleMode,
+                    onRequestNotifications = {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            settingsViewModel.refreshNotificationPermission()
+                        }
+                    },
                 )
             }
         }

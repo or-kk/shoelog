@@ -13,6 +13,7 @@ import ai.orkk.shoelog.data.repository.SampleDataRepository
 import ai.orkk.shoelog.data.repository.ShoeRepository
 import ai.orkk.shoelog.data.repository.SyncRepository
 import ai.orkk.shoelog.data.repository.SyncSettings
+import ai.orkk.shoelog.notification.RunNotificationManager
 import kotlinx.coroutines.flow.first
 
 class ShoeLogApplication : Application() {
@@ -31,12 +32,14 @@ class AppContainer(application: Application) {
     val shoeRepository = ShoeRepository(dao)
     val exerciseRepository = ExerciseRepository(dao)
     val healthConnectDataSource: HealthConnectDataSource = AndroidHealthConnectDataSource(application)
+    val notificationManager = RunNotificationManager(application)
     val syncRepository = SyncRepository(
         health = healthConnectDataSource,
         store = RoomExerciseSyncStore(dao),
         settings = object : SyncSettings {
             override suspend fun current() = settingsRepository.settings.first()
         },
+        notifier = notificationManager,
     )
     val sampleDataRepository = SampleDataRepository(RoomSampleDataStore(dao))
 }

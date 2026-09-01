@@ -14,8 +14,15 @@ class MainActivity : ComponentActivity() {
         val container = (application as ShoeLogApplication).container
         setContent {
             ShoeLogTheme {
-                ShoeLogApp(container = container)
+                ShoeLogApp(
+                    container = container,
+                    initialExerciseId = intent.getStringExtra(EXTRA_EXERCISE_ID),
+                )
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_EXERCISE_ID = "ai.orkk.shoelog.extra.EXERCISE_ID"
     }
 }
