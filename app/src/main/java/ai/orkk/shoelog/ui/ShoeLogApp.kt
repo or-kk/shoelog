@@ -1,5 +1,9 @@
 package ai.orkk.shoelog.ui
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -9,9 +13,15 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -22,6 +32,11 @@ import androidx.navigation.compose.rememberNavController
 import ai.orkk.shoelog.AppContainer
 import ai.orkk.shoelog.ui.home.HomeScreen
 import ai.orkk.shoelog.ui.home.HomeViewModel
+import ai.orkk.shoelog.ui.shoes.ShoeDetailScreen
+import ai.orkk.shoelog.ui.shoes.ShoeEditorScreen
+import ai.orkk.shoelog.ui.shoes.ShoeEditorViewModel
+import ai.orkk.shoelog.ui.shoes.ShoeListScreen
+import kotlinx.coroutines.launch
 
 object Routes {
     const val HOME = "home"
@@ -89,9 +104,69 @@ fun ShoeLogApp(container: AppContainer) {
                     onOpenExercises = { navController.navigate(Routes.exercises()) },
                 )
             }
-            composable(Routes.SHOES) { FeaturePlaceholder("러닝화") }
-            composable(Routes.SHOE_DETAIL) { FeaturePlaceholder("러닝화 상세") }
-            composable(Routes.SHOE_EDITOR) { FeaturePlaceholder("러닝화 추가·수정") }
+            composable(Routes.SHOES) {
+                var includeRetired by remember { mutableStateOf(false) }
+                val shoesFlow = remember(includeRetired) { container.shoeRepository.observeShoes(includeRetired) }
+                val shoes by shoesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+                ShoeListScreen(
+                    shoes = shoes,
+                    includeRetired = includeRetired,
+                    onIncludeRetiredChange = { includeRetired = it },
+                    onAdd = { navController.navigate(Routes.shoeEditor()) },
+                    onOpen = { navController.navigate(Routes.shoeDetail(it)) },
+                )
+            }
+            composable(Routes.SHOE_DETAIL) { entry ->
+                val shoeId = entry.arguments?.getString("shoeId")?.toLongOrNull() ?: return@composable
+                val shoeFlow = remember(shoeId) { container.shoeRepository.observeShoe(shoeId) }
+                val exercisesFlow = remember { container.exerciseRepository.observeExercises() }
+                val shoe by shoeFlow.collectAsStateWithLifecycle(initialValue = null)
+                val exercises by exercisesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+                val scope = rememberCoroutineScope()
+                ShoeDetailScreen(
+                    shoe = shoe,
+                    exercises = exercises.filter { it.assignedShoeId == shoeId },
+                    onBack = navController::popBackStack,
+                    onEdit = { navController.navigate(Routes.shoeEditor(shoeId)) },
+                    onRetireToggle = {
+                        val current = shoe ?: return@ShoeDetailScreen
+                        scope.launch { container.shoeRepository.setRetired(shoeId, !current.retired) }
+                    },
+                )
+            }
+            composable(Routes.SHOE_EDITOR) { entry ->
+                val requestedId = entry.arguments?.getString("shoeId")?.toLongOrNull()
+                val shoeId = requestedId?.takeIf { it != -1L }
+                val editor: ShoeEditorViewModel = viewModel(
+                    key = "shoe-editor-${shoeId ?: "new"}",
+                    factory = ShoeEditorViewModel.factory(container.shoeRepository, shoeId),
+                )
+                val state by editor.state.collectAsStateWithLifecycle()
+                val context = LocalContext.current
+                val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                    if (uri != null) {
+                        runCatching {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                            )
+                        }
+                        editor.setPhotoUri(uri.toString())
+                    }
+                }
+                LaunchedEffect(state.savedShoeId) {
+                    if (state.savedShoeId != null) navController.popBackStack()
+                }
+                ShoeEditorScreen(
+                    state = state,
+                    onFormChange = editor::updateForm,
+                    onPickPhoto = {
+                        photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
+                    onSave = editor::save,
+                    onBack = navController::popBackStack,
+                )
+            }
             composable(Routes.EXERCISES) { FeaturePlaceholder("달리기 기록") }
             composable(Routes.SETTINGS) { FeaturePlaceholder("설정") }
         }

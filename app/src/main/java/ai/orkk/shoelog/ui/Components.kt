@@ -1,5 +1,8 @@
 package ai.orkk.shoelog.ui
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,9 +23,15 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -34,6 +43,8 @@ import ai.orkk.shoelog.domain.Shoe
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 fun formatDistance(meters: Long?): String = meters
     ?.let { String.format(Locale.KOREA, "%.1f km", it.coerceAtLeast(0) / 1_000.0) }
@@ -89,7 +100,17 @@ fun ShoeMileageCard(shoe: Shoe, onClick: () -> Unit, modifier: Modifier = Modifi
                     .semantics { contentDescription = "${shoe.brand} ${shoe.model} 신발 사진 자리" },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("👟", style = MaterialTheme.typography.headlineMedium)
+                val photo by rememberLocalPhoto(shoe.photoUri)
+                if (photo == null) {
+                    Text("👟", style = MaterialTheme.typography.headlineMedium)
+                } else {
+                    Image(
+                        bitmap = requireNotNull(photo),
+                        contentDescription = "${shoe.brand} ${shoe.model} 신발 사진",
+                        modifier = Modifier.size(64.dp),
+                        contentScale = ContentScale.Crop,
+                    )
+                }
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -111,6 +132,20 @@ fun ShoeMileageCard(shoe: Shoe, onClick: () -> Unit, modifier: Modifier = Modifi
                 }
                 Text(statusText, style = MaterialTheme.typography.labelMedium)
             }
+        }
+    }
+}
+
+@Composable
+private fun rememberLocalPhoto(uriString: String?): androidx.compose.runtime.State<ImageBitmap?> {
+    val context = LocalContext.current
+    return produceState<ImageBitmap?>(initialValue = null, key1 = uriString) {
+        value = if (uriString == null) null else withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openInputStream(Uri.parse(uriString)).use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            }.getOrNull()
         }
     }
 }
