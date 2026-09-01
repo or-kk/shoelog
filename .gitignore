@@ -1,0 +1,35 @@
+*.iml
+.gradle
+/.kotlin
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing material
+*.jks
+*.keystore
+*.p12
+keystore.properties
+signing.properties
+
+# Private health data and local fixtures
+/health-data/
+/private-fixtures/
+*.db
+*.db-*
+*.preferences_pb
+
+# Generated packages and reports
+*.apk
+*.aab
+/app/schemas/

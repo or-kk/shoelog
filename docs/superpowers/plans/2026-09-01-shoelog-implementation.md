@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the existing single `app` module and separate domain rules, Room persistence, settings, Health Connect access, repositories, and Compose feature screens through focused packages and interfaces. The UI consumes immutable state from ViewModels; real and fake Health Connect implementations share one contract so the app remains testable without health data.
 
-**Tech Stack:** Kotlin with AGP 9.2.1 built-in Kotlin, JDK 17, compileSdk 36.1, targetSdk 36, minSdk 28, Compose BOM 2026.06.01, Material 3, Navigation Compose 2.9.8, Room 2.8.4 with KSP 2.3.11, Lifecycle 2.11.0, Activity Compose 1.13.0, DataStore 1.2.1, Health Connect 1.1.0, Coroutines, Flow, JUnit, AndroidX test.
+**Tech Stack:** Kotlin with AGP 9.2.1 built-in Kotlin, JDK 17, compileSdk 36.1, targetSdk 36, minSdk 28, Compose BOM 2026.06.01, Material 3, Navigation Compose 2.9.8, Room 2.8.4 with KSP 2.3.11, Lifecycle 2.10.0, Activity Compose 1.13.0, Core KTX 1.18.0, DataStore 1.2.1, Health Connect 1.1.0, Coroutines, Flow, JUnit, AndroidX test.
 
 **Spec:** `docs/superpowers/specs/2026-09-01-shoelog-design.md`
 
