@@ -170,7 +170,7 @@ interface ShoeLogDao {
     @Query("SELECT * FROM exercise_shoe_assignments WHERE exerciseId = :exerciseId")
     suspend fun assignmentFor(exerciseId: String): ExerciseShoeAssignmentEntity?
 
-    @Query("UPDATE exercises SET sourceDeleted = 1, syncedAtEpochMillis = :syncedAt WHERE startEpochMillis >= :start AND endEpochMillis <= :end AND id NOT IN (:presentIds)")
+    @Query("UPDATE exercises SET sourceDeleted = 1, syncedAtEpochMillis = :syncedAt WHERE startEpochMillis >= :start AND endEpochMillis <= :end AND id NOT LIKE 'sample:%' AND id NOT IN (:presentIds)")
     suspend fun markMissingExercisesDeleted(
         start: Long,
         end: Long,
@@ -178,7 +178,7 @@ interface ShoeLogDao {
         syncedAt: Long,
     )
 
-    @Query("UPDATE exercises SET sourceDeleted = 1, syncedAtEpochMillis = :syncedAt WHERE startEpochMillis >= :start AND endEpochMillis <= :end")
+    @Query("UPDATE exercises SET sourceDeleted = 1, syncedAtEpochMillis = :syncedAt WHERE startEpochMillis >= :start AND endEpochMillis <= :end AND id NOT LIKE 'sample:%'")
     suspend fun markAllExercisesDeleted(
         start: Long,
         end: Long,

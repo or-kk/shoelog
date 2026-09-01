@@ -82,6 +82,30 @@ class SyncRepositoryTest {
         assertFalse(store.records.getValue("hc:no-distance").sourceDeleted)
     }
 
+    @Test
+    fun healthSyncNeverSoftDeletesSampleRecords() = runTest {
+        val health = FakeHealthConnectDataSource(records = emptyList())
+        val store = InMemorySyncStore().apply {
+            records["sample:run-01"] = ExerciseEntity(
+                id = "sample:run-01",
+                fallbackKey = "fallback:sample:run-01",
+                startEpochMillis = now.minusSeconds(3_600).toEpochMilli(),
+                endEpochMillis = now.minusSeconds(1_800).toEpochMilli(),
+                distanceMeters = 5_000,
+                exerciseType = 56,
+                sourcePackage = "ai.orkk.shoelog.sample",
+                sourceName = "ShoeLog 샘플",
+                sourceUpdatedAtEpochMillis = null,
+                syncedAtEpochMillis = now.toEpochMilli(),
+                sourceDeleted = false,
+            )
+        }
+
+        SyncRepository(health, store, settings(), clock).sync()
+
+        assertFalse(store.records.getValue("sample:run-01").sourceDeleted)
+    }
+
     private fun run(
         id: String,
         distance: Long? = 5_000,
@@ -132,7 +156,7 @@ private class InMemorySyncStore(
         syncedAtEpochMillis: Long,
     ) {
         records.replaceAll { id, record ->
-            if (id !in presentIds && record.startEpochMillis >= startEpochMillis && record.endEpochMillis <= endEpochMillis) {
+            if (!id.startsWith("sample:") && id !in presentIds && record.startEpochMillis >= startEpochMillis && record.endEpochMillis <= endEpochMillis) {
                 record.copy(sourceDeleted = true, syncedAtEpochMillis = syncedAtEpochMillis)
             } else record
         }
