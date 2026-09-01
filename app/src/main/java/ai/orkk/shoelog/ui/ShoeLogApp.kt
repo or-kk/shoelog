@@ -4,8 +4,6 @@ import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -19,11 +17,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -32,6 +31,10 @@ import androidx.navigation.compose.rememberNavController
 import ai.orkk.shoelog.AppContainer
 import ai.orkk.shoelog.ui.home.HomeScreen
 import ai.orkk.shoelog.ui.home.HomeViewModel
+import ai.orkk.shoelog.ui.exercises.ExerciseListScreen
+import ai.orkk.shoelog.ui.exercises.ExerciseListViewModel
+import ai.orkk.shoelog.ui.settings.SettingsScreen
+import ai.orkk.shoelog.ui.settings.SettingsViewModel
 import ai.orkk.shoelog.ui.shoes.ShoeDetailScreen
 import ai.orkk.shoelog.ui.shoes.ShoeEditorScreen
 import ai.orkk.shoelog.ui.shoes.ShoeEditorViewModel
@@ -51,12 +54,17 @@ object Routes {
     fun exercises(id: String = "") = "exercises?exerciseId=$id"
 }
 
-private data class MainDestination(val route: String, val label: String, val symbol: String)
+private data class MainDestination(
+    val route: String,
+    val navigationRoute: String,
+    val label: String,
+    val symbol: String,
+)
 
 private val mainDestinations = listOf(
-    MainDestination(Routes.HOME, "홈", "●"),
-    MainDestination(Routes.EXERCISES, "달리기", "↗"),
-    MainDestination(Routes.SETTINGS, "설정", "⚙"),
+    MainDestination(Routes.HOME, Routes.HOME, "홈", "●"),
+    MainDestination(Routes.EXERCISES, Routes.exercises(), "달리기", "↗"),
+    MainDestination(Routes.SETTINGS, Routes.SETTINGS, "설정", "⚙"),
 )
 
 @Composable
@@ -74,7 +82,7 @@ fun ShoeLogApp(container: AppContainer) {
                         NavigationBarItem(
                             selected = currentRoute == destination.route,
                             onClick = {
-                                navController.navigate(destination.route) {
+                                navController.navigate(destination.navigationRoute) {
                                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
@@ -167,15 +175,43 @@ fun ShoeLogApp(container: AppContainer) {
                     onBack = navController::popBackStack,
                 )
             }
-            composable(Routes.EXERCISES) { FeaturePlaceholder("달리기 기록") }
-            composable(Routes.SETTINGS) { FeaturePlaceholder("설정") }
+            composable(Routes.EXERCISES) { entry ->
+                val selectedId = entry.arguments?.getString("exerciseId")?.takeIf(String::isNotBlank)
+                val exerciseViewModel: ExerciseListViewModel = viewModel(
+                    key = "exercises-${selectedId.orEmpty()}",
+                    factory = ExerciseListViewModel.factory(
+                        container.exerciseRepository,
+                        container.shoeRepository,
+                        selectedId,
+                    ),
+                )
+                val state by exerciseViewModel.state.collectAsStateWithLifecycle()
+                ExerciseListScreen(
+                    state = state,
+                    onUnassignedOnlyChange = exerciseViewModel::setUnassignedOnly,
+                    onSelect = exerciseViewModel::select,
+                    onAssign = exerciseViewModel::assign,
+                )
+            }
+            composable(Routes.SETTINGS) {
+                val settingsViewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory(container))
+                val state by settingsViewModel.state.collectAsStateWithLifecycle()
+                val healthPermissionLauncher = rememberLauncherForActivityResult(
+                    PermissionController.createRequestPermissionResultContract(),
+                ) { granted -> settingsViewModel.refreshPermissions(granted) }
+                SettingsScreen(
+                    state = state,
+                    onRequestPermissions = {
+                        healthPermissionLauncher.launch(container.healthConnectDataSource.requiredPermissions)
+                    },
+                    onRequestHistory = {
+                        healthPermissionLauncher.launch(setOf(HealthPermission.PERMISSION_READ_HEALTH_DATA_HISTORY))
+                    },
+                    onSync = settingsViewModel::sync,
+                    onAutoAssignChange = settingsViewModel::setAutoAssign,
+                    onSampleModeChange = settingsViewModel::setSampleMode,
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun FeaturePlaceholder(title: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text(title, style = MaterialTheme.typography.headlineSmall)
     }
 }
