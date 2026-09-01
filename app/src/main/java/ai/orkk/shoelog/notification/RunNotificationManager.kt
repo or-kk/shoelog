@@ -51,7 +51,11 @@ class RunNotificationManager(private val context: Context) : UnassignedRunNotifi
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+        } catch (_: SecurityException) {
+            // The runtime notification permission can be revoked after canNotify().
+        }
     }
 
     private fun createChannel() {
