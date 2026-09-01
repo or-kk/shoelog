@@ -105,6 +105,9 @@ interface ShoeLogDao {
     @Query("SELECT * FROM exercises WHERE id = :exerciseId")
     suspend fun exerciseById(exerciseId: String): ExerciseEntity?
 
+    @Query("SELECT * FROM exercises WHERE fallbackKey = :fallbackKey LIMIT 1")
+    suspend fun exerciseByFallbackKey(fallbackKey: String): ExerciseEntity?
+
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun exerciseCount(): Int
 
@@ -172,6 +175,13 @@ interface ShoeLogDao {
         start: Long,
         end: Long,
         presentIds: List<String>,
+        syncedAt: Long,
+    )
+
+    @Query("UPDATE exercises SET sourceDeleted = 1, syncedAtEpochMillis = :syncedAt WHERE startEpochMillis >= :start AND endEpochMillis <= :end")
+    suspend fun markAllExercisesDeleted(
+        start: Long,
+        end: Long,
         syncedAt: Long,
     )
 
