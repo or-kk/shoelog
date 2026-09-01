@@ -135,7 +135,7 @@ fun HomeScreen(
                 }
             }
         }
-        if (state.shoes.isEmpty() && state.recentExercises.isEmpty()) {
+        if (state.shoes.isEmpty()) {
             item {
                 EmptyState(
                     title = "아직 러닝화가 없습니다",
@@ -146,17 +146,15 @@ fun HomeScreen(
                 )
             }
         } else {
-            if (state.shoes.isNotEmpty()) {
-                item { Text("내 러닝화", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(state.shoes, key = { it.id }) { shoe ->
-                    ShoeMileageCard(shoe = shoe, onClick = { onOpenShoe(shoe.id) })
-                }
+            item { Text("내 러닝화", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            items(state.shoes, key = { it.id }) { shoe ->
+                ShoeMileageCard(shoe = shoe, onClick = { onOpenShoe(shoe.id) })
             }
-            if (state.recentExercises.isNotEmpty()) {
-                item { Text("최근 달리기", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                items(state.recentExercises, key = { it.id }) { exercise ->
-                    ExerciseRow(exercise = exercise, onClick = onOpenExercises)
-                }
+        }
+        if (state.recentExercises.isNotEmpty()) {
+            item { Text("최근 달리기", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            items(state.recentExercises, key = { it.id }) { exercise ->
+                ExerciseRow(exercise = exercise, onClick = onOpenExercises)
             }
         }
     }
