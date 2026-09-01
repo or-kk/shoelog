@@ -188,6 +188,6 @@ interface ShoeLogDao {
     @Query("DELETE FROM exercises WHERE id LIKE 'sample:%'")
     suspend fun clearSampleExercises()
 
-    @Query("DELETE FROM shoes WHERE brand = 'ShoeLog Sample'")
+    @Query("DELETE FROM shoes WHERE id < 0")
     suspend fun clearSampleShoes()
 }
