@@ -42,10 +42,11 @@ class SampleDataRepositoryTest {
             store.exercises.forEach { addAll(listOf(it.id, it.sourcePackage, it.sourceName)) }
         }.joinToString(" ").lowercase()
 
-        assertFalse("tmdrl1026" in allText)
-        assertFalse("ralph" in allText)
-        assertFalse("greenit" in allText)
+        assertFalse("@" in allText)
+        assertFalse("/users/" in allText)
         assertTrue(store.exercises.all { it.id.startsWith("sample:") })
+        assertTrue(store.exercises.all { it.sourcePackage == "ai.orkk.shoelog.sample" })
+        assertTrue(store.exercises.all { it.sourceName == "ShoeLog 샘플" })
     }
 }
 
