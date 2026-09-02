@@ -348,7 +348,6 @@ fun ShoeEditorScreen(
                 }
             }
             item { ToggleRow("기본 신발", form.defaultShoe) { onFormChange(form.copy(defaultShoe = it)) } }
-            item { ToggleRow("은퇴 상태", form.retired) { onFormChange(form.copy(retired = it)) } }
             state.message?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
             item {
                 Button(onClick = onSave, enabled = !state.isSaving, modifier = Modifier.fillMaxWidth()) {

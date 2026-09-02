@@ -105,6 +105,26 @@ class ShoeLogDaoTest {
         assertEquals(169_000L, stored.listPriceWon)
     }
 
+    @Test
+    fun newlyRegisteredShoeCannotStartRetired() = runTest {
+        val repository = ShoeRepository(
+            dao = dao,
+            clock = Clock.fixed(Instant.parse("2026-09-02T00:00:00Z"), ZoneOffset.UTC),
+        )
+
+        val shoeId = repository.save(
+            shoeId = null,
+            draft = ShoeDraft(
+                brand = "Fictional",
+                model = "Visible Runner",
+                retired = true,
+            ),
+        )
+
+        val activeShoeIds = repository.observeShoes().first().map { it.id }
+        assertEquals(listOf(shoeId), activeShoeIds)
+    }
+
     private fun shoe(
         initialMeters: Long = 0,
         model: String = "Runner",

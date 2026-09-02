@@ -42,7 +42,7 @@ class ShoeRepository(
         val normalized = draft.normalizedAndValidated()
         val now = clock.instant().toEpochMilli()
         val savedId = if (shoeId == null) {
-            dao.insertShoe(normalized.toEntity(createdAt = now, updatedAt = now))
+            dao.insertShoe(normalized.copy(retired = false).toEntity(createdAt = now, updatedAt = now))
         } else {
             val existing = requireNotNull(dao.shoeById(shoeId)) { "러닝화를 찾을 수 없습니다." }
             dao.updateShoe(normalized.toEntity(id = shoeId, createdAt = existing.createdAtEpochMillis, updatedAt = now))

@@ -1,8 +1,10 @@
 package ai.orkk.shoelog.ui.shoes
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performScrollToNode
@@ -69,5 +71,22 @@ class ShoeEditorScreenTest {
         composeRule.onNodeWithTag("shoe_editor_list")
             .performScrollToNode(hasText("0 이상의 원화 정수를 입력해 주세요."))
         composeRule.onNodeWithText("0 이상의 원화 정수를 입력해 주세요.").assertIsDisplayed()
+    }
+
+    @Test
+    fun editorDoesNotOfferRetirementWhileSaving() {
+        composeRule.setContent {
+            ShoeEditorScreen(
+                state = ShoeEditorUiState(),
+                onFormChange = {},
+                onPickPhoto = {},
+                onSave = {},
+                onBack = {},
+            )
+        }
+
+        composeRule.onNodeWithTag("shoe_editor_list")
+            .performScrollToNode(hasText("저장"))
+        composeRule.onAllNodesWithText("은퇴 상태").assertCountEquals(0)
     }
 }
