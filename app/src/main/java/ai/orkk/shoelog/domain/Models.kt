@@ -32,6 +32,8 @@ data class Shoe(
     val photoUri: String? = null,
     val retired: Boolean = false,
     val defaultShoe: Boolean = false,
+    val category: ShoeCategory? = null,
+    val purposes: Set<ShoePurpose> = emptySet(),
     val createdAt: Instant,
     val updatedAt: Instant,
     val mileage: MileageSummary = MileageCalculator.calculate(initialMeters, emptyList(), targetMeters),
