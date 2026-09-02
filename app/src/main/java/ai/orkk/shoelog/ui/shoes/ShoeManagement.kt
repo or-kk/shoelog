@@ -1,13 +1,45 @@
-@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+@file:OptIn(
+    kotlinx.coroutines.ExperimentalCoroutinesApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+)
 
 package ai.orkk.shoelog.ui.shoes
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import ai.orkk.shoelog.data.repository.DeleteShoeResult
 import ai.orkk.shoelog.data.repository.ShoeRepository
 import ai.orkk.shoelog.domain.Shoe
+import ai.orkk.shoelog.ui.EmptyState
+import ai.orkk.shoelog.ui.ShoeMileageCard
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -169,4 +201,144 @@ class ShoeManagementViewModel(private val repository: ShoeRepository) : ViewMode
                     ShoeManagementViewModel(repository) as T
             }
     }
+}
+
+@Composable
+fun ShoeListScreen(
+    state: ShoeManagementUiState,
+    onIncludeRetiredChange: (Boolean) -> Unit,
+    onSortKeyChange: (ShoeSortKey) -> Unit,
+    onToggleSortDirection: () -> Unit,
+    onAdd: () -> Unit,
+    onOpen: (Long) -> Unit,
+    onEdit: (Long) -> Unit,
+    onDelete: (Shoe) -> Unit,
+    onConfirmDelete: () -> Unit,
+    onCancelDelete: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("러닝화 관리") },
+                actions = { TextButton(onClick = onAdd) { Text("추가") } },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("은퇴한 신발 포함")
+                    Switch(checked = state.includeRetired, onCheckedChange = onIncludeRetiredChange)
+                }
+            }
+            item {
+                SortControls(
+                    sortKey = state.sortKey,
+                    direction = state.sortDirection,
+                    onSortKeyChange = onSortKeyChange,
+                    onToggleDirection = onToggleSortDirection,
+                )
+            }
+            state.message?.let { message ->
+                item { Text(message, color = MaterialTheme.colorScheme.primary) }
+            }
+            if (state.shoes.isEmpty()) {
+                item {
+                    EmptyState(
+                        title = "등록된 러닝화가 없습니다",
+                        message = "러닝화를 추가해 마일리지를 관리하세요.",
+                        actionLabel = "러닝화 추가",
+                        onAction = onAdd,
+                    )
+                }
+            } else {
+                items(state.shoes, key = Shoe::id) { shoe ->
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ShoeMileageCard(shoe, onClick = { onOpen(shoe.id) })
+                        Text(
+                            "구매일 ${shoe.purchaseDate ?: "미입력"} · 구매가격 ${formatWon(shoe.purchasePriceWon)}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                            TextButton(
+                                onClick = { onEdit(shoe.id) },
+                                modifier = Modifier.testTag("edit_shoe_${shoe.id}"),
+                            ) { Text("수정") }
+                            TextButton(
+                                onClick = { onDelete(shoe) },
+                                modifier = Modifier.testTag("delete_shoe_${shoe.id}"),
+                            ) { Text("삭제") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    state.pendingDelete?.let { shoe ->
+        DeleteShoeDialog(
+            shoe = shoe,
+            onConfirm = onConfirmDelete,
+            onDismiss = onCancelDelete,
+        )
+    }
+}
+
+@Composable
+private fun SortControls(
+    sortKey: ShoeSortKey,
+    direction: SortDirection,
+    onSortKeyChange: (ShoeSortKey) -> Unit,
+    onToggleDirection: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            OutlinedButton(onClick = { expanded = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("정렬: ${sortKey.displayName}")
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                ShoeSortKey.entries.forEach { key ->
+                    DropdownMenuItem(
+                        text = { Text(key.displayName) },
+                        onClick = {
+                            onSortKeyChange(key)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+        OutlinedButton(onClick = onToggleDirection) {
+            Text(if (direction == SortDirection.ASCENDING) "오름차순" else "내림차순")
+        }
+    }
+}
+
+@Composable
+internal fun DeleteShoeDialog(
+    shoe: Shoe,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val name = shoe.nickname.ifBlank { shoe.model }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("${name}를 삭제할까요?") },
+        text = { Text("삭제한 러닝화는 복구할 수 없습니다.") },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.testTag("confirm_delete_shoe"),
+            ) { Text("삭제") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("취소") } },
+    )
 }

@@ -31,6 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import ai.orkk.shoelog.AppContainer
+import ai.orkk.shoelog.data.repository.DeleteShoeResult
 import ai.orkk.shoelog.ui.home.HomeScreen
 import ai.orkk.shoelog.ui.home.HomeViewModel
 import ai.orkk.shoelog.ui.exercises.ExerciseListScreen
@@ -41,6 +42,7 @@ import ai.orkk.shoelog.ui.shoes.ShoeDetailScreen
 import ai.orkk.shoelog.ui.shoes.ShoeEditorScreen
 import ai.orkk.shoelog.ui.shoes.ShoeEditorViewModel
 import ai.orkk.shoelog.ui.shoes.ShoeListScreen
+import ai.orkk.shoelog.ui.shoes.ShoeManagementViewModel
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -66,6 +68,7 @@ private data class MainDestination(
 private val mainDestinations = listOf(
     MainDestination(Routes.HOME, Routes.HOME, "홈", "●"),
     MainDestination(Routes.EXERCISES, Routes.exercises(), "달리기", "↗"),
+    MainDestination(Routes.SHOES, Routes.SHOES, "러닝화", "👟"),
     MainDestination(Routes.SETTINGS, Routes.SETTINGS, "설정", "⚙"),
 )
 
@@ -121,15 +124,21 @@ fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
                 )
             }
             composable(Routes.SHOES) {
-                var includeRetired by remember { mutableStateOf(false) }
-                val shoesFlow = remember(includeRetired) { container.shoeRepository.observeShoes(includeRetired) }
-                val shoes by shoesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+                val management: ShoeManagementViewModel = viewModel(
+                    factory = ShoeManagementViewModel.factory(container.shoeRepository),
+                )
+                val state by management.state.collectAsStateWithLifecycle()
                 ShoeListScreen(
-                    shoes = shoes,
-                    includeRetired = includeRetired,
-                    onIncludeRetiredChange = { includeRetired = it },
+                    state = state,
+                    onIncludeRetiredChange = management::setIncludeRetired,
+                    onSortKeyChange = management::setSortKey,
+                    onToggleSortDirection = management::toggleSortDirection,
                     onAdd = { navController.navigate(Routes.shoeEditor()) },
                     onOpen = { navController.navigate(Routes.shoeDetail(it)) },
+                    onEdit = { navController.navigate(Routes.shoeEditor(it)) },
+                    onDelete = management::requestDelete,
+                    onConfirmDelete = management::confirmDelete,
+                    onCancelDelete = management::cancelDelete,
                 )
             }
             composable(Routes.SHOE_DETAIL) { entry ->
@@ -139,6 +148,7 @@ fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
                 val shoe by shoeFlow.collectAsStateWithLifecycle(initialValue = null)
                 val exercises by exercisesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
                 val scope = rememberCoroutineScope()
+                var deleteMessage by remember(shoeId) { mutableStateOf<String?>(null) }
                 ShoeDetailScreen(
                     shoe = shoe,
                     exercises = exercises.filter { it.assignedShoeId == shoeId },
@@ -148,6 +158,20 @@ fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
                         val current = shoe ?: return@ShoeDetailScreen
                         scope.launch { container.shoeRepository.setRetired(shoeId, !current.retired) }
                     },
+                    onDelete = {
+                        scope.launch {
+                            deleteMessage = when (container.shoeRepository.deleteIfUnused(shoeId)) {
+                                DeleteShoeResult.DELETED -> {
+                                    navController.popBackStack()
+                                    null
+                                }
+                                DeleteShoeResult.BLOCKED_BY_ASSIGNMENTS ->
+                                    "달리기 기록이 연결된 러닝화는 삭제할 수 없습니다. 은퇴 처리하거나 기록 배정을 해제한 뒤 다시 시도해 주세요."
+                                DeleteShoeResult.NOT_FOUND -> "러닝화를 찾을 수 없습니다."
+                            }
+                        }
+                    },
+                    deleteMessage = deleteMessage,
                 )
             }
             composable(Routes.SHOE_EDITOR) { entry ->

@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -119,6 +122,20 @@ fun ShoeMileageCard(shoe: Shoe, onClick: () -> Unit, modifier: Modifier = Modifi
                         Text("${shoe.brand} · ${shoe.model}", style = MaterialTheme.typography.bodySmall)
                     }
                     if (shoe.defaultShoe) Text("기본", color = MaterialTheme.colorScheme.primary)
+                }
+                shoe.category?.let { category ->
+                    Text(
+                        "${category.group.displayName} · ${category.displayName}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                if (shoe.purposes.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(shoe.purposes.toList(), key = { it.code }) { purpose ->
+                            AssistChip(onClick = {}, label = { Text(purpose.displayName) })
+                        }
+                    }
                 }
                 Text("${formatDistance(shoe.mileage.totalMeters)} / ${formatDistance(shoe.targetMeters)}")
                 LinearProgressIndicator(
