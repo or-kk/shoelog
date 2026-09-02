@@ -31,7 +31,7 @@ class AppContainer(application: Application) {
     private val dao = database.shoeLogDao()
 
     val settingsRepository = SettingsRepository(application)
-    val shoeRepository = ShoeRepository(dao)
+    val shoeRepository = ShoeRepository(dao, defaultShoePreferences = settingsRepository)
     val exerciseRepository = ExerciseRepository(dao)
     val healthConnectDataSource: HealthConnectDataSource = AndroidHealthConnectDataSource(application)
     val notificationManager = RunNotificationManager(application)

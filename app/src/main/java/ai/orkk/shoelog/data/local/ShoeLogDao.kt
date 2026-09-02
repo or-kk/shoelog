@@ -78,6 +78,16 @@ interface ShoeLogDao {
     @Query("DELETE FROM shoes WHERE id = :shoeId")
     suspend fun deleteShoeById(shoeId: Long)
 
+    @Query("SELECT COUNT(*) FROM exercise_shoe_assignments WHERE shoeId = :shoeId")
+    suspend fun assignmentCountForShoe(shoeId: Long): Int
+
+    @Transaction
+    suspend fun deleteShoeIfUnused(shoeId: Long): Boolean {
+        if (assignmentCountForShoe(shoeId) > 0) return false
+        deleteShoeById(shoeId)
+        return true
+    }
+
     @Transaction
     suspend fun deleteShoePreservingExercises(shoeId: Long) {
         deleteShoeById(shoeId)

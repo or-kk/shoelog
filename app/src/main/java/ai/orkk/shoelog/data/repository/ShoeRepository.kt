@@ -4,6 +4,7 @@ import ai.orkk.shoelog.data.local.ShoeEntity
 import ai.orkk.shoelog.data.local.ShoeLogDao
 import ai.orkk.shoelog.data.local.ShoeMetadataCodec
 import ai.orkk.shoelog.data.local.ShoeMileageRow
+import ai.orkk.shoelog.data.preferences.DefaultShoePreferenceStore
 import ai.orkk.shoelog.domain.MileageCalculator
 import ai.orkk.shoelog.domain.Shoe
 import ai.orkk.shoelog.domain.ShoeCategory
@@ -33,9 +34,20 @@ data class ShoeDraft(
     val purposes: Set<ShoePurpose> = emptySet(),
 )
 
+enum class DeleteShoeResult {
+    DELETED,
+    BLOCKED_BY_ASSIGNMENTS,
+    NOT_FOUND,
+}
+
+private object NoOpDefaultShoePreferenceStore : DefaultShoePreferenceStore {
+    override suspend fun clearIfMatches(shoeId: Long) = Unit
+}
+
 class ShoeRepository(
     private val dao: ShoeLogDao,
     private val clock: Clock = Clock.systemUTC(),
+    private val defaultShoePreferences: DefaultShoePreferenceStore = NoOpDefaultShoePreferenceStore,
 ) {
     fun observeShoes(includeRetired: Boolean = false): Flow<List<Shoe>> =
         dao.observeShoes(includeRetired).map { rows -> rows.map(ShoeMileageRow::toDomainShoe) }
@@ -68,11 +80,11 @@ class ShoeRepository(
         dao.setDefaultShoe(shoeId, clock.instant().toEpochMilli())
     }
 
-    suspend fun deleteIfUnused(shoeId: Long): Boolean {
-        val row = dao.observeShoeMileage(shoeId).first() ?: return true
-        if (row.assignedExerciseCount > 0) return false
-        dao.deleteShoePreservingExercises(shoeId)
-        return true
+    suspend fun deleteIfUnused(shoeId: Long): DeleteShoeResult {
+        if (dao.shoeById(shoeId) == null) return DeleteShoeResult.NOT_FOUND
+        if (!dao.deleteShoeIfUnused(shoeId)) return DeleteShoeResult.BLOCKED_BY_ASSIGNMENTS
+        defaultShoePreferences.clearIfMatches(shoeId)
+        return DeleteShoeResult.DELETED
     }
 
     fun observeBrandAndModelSuggestions(): Flow<Pair<List<String>, List<String>>> =

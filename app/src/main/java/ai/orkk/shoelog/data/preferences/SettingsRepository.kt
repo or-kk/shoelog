@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import java.io.IOException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.shoeLogSettings by preferencesDataStore(name = "shoelog_settings")
@@ -19,7 +20,11 @@ data class AppSettings(
     val sampleMode: Boolean = false,
 )
 
-class SettingsRepository(private val context: Context) {
+interface DefaultShoePreferenceStore {
+    suspend fun clearIfMatches(shoeId: Long)
+}
+
+class SettingsRepository(private val context: Context) : DefaultShoePreferenceStore {
     private object Keys {
         val autoAssignDefault = booleanPreferencesKey("auto_assign_default")
         val defaultShoeId = longPreferencesKey("default_shoe_id")
@@ -50,6 +55,10 @@ class SettingsRepository(private val context: Context) {
             if (shoeId == null) preferences.remove(Keys.defaultShoeId)
             else preferences[Keys.defaultShoeId] = shoeId
         }
+    }
+
+    override suspend fun clearIfMatches(shoeId: Long) {
+        if (settings.first().defaultShoeId == shoeId) setDefaultShoeId(null)
     }
 
     suspend fun setHistoryRequested(enabled: Boolean) {

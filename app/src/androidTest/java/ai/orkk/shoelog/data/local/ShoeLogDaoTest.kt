@@ -13,7 +13,10 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -72,6 +75,21 @@ class ShoeLogDaoTest {
 
         assertEquals(1, dao.exerciseCount())
         assertNull(dao.assignmentFor("run:1"))
+    }
+
+    @Test
+    fun assignedShoeCannotBeDeletedButUnusedShoeCan() = runTest {
+        val assignedId = dao.insertShoe(shoe())
+        dao.upsertExercises(listOf(exercise(id = "run:1")))
+        dao.assignShoe("run:1", assignedId, automatic = false, assignedAtEpochMillis = 10)
+
+        assertFalse(dao.deleteShoeIfUnused(assignedId))
+        assertNotNull(dao.shoeById(assignedId))
+
+        val unusedId = dao.insertShoe(shoe(model = "Unused"))
+
+        assertTrue(dao.deleteShoeIfUnused(unusedId))
+        assertNull(dao.shoeById(unusedId))
     }
 
     @Test
