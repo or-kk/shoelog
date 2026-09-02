@@ -28,6 +28,25 @@ class RepositoryMappingTest {
     }
 
     @Test
+    fun shoeMappingPreservesWonPrices() {
+        val row = ShoeMileageRow(
+            shoe = shoeEntity(
+                photoUri = null,
+                retired = false,
+                purchasePriceWon = 129_000,
+                listPriceWon = 169_000,
+            ),
+            totalMeters = 0,
+            assignedExerciseCount = 0,
+        )
+
+        val shoe = row.toDomainShoe()
+
+        assertEquals(129_000L, shoe.purchasePriceWon)
+        assertEquals(169_000L, shoe.listPriceWon)
+    }
+
+    @Test
     fun distanceLessExerciseRemainsVisibleAndUnassigned() {
         val row = ExerciseWithShoeRow(
             exercise = exerciseEntity(distanceMeters = null),
@@ -48,6 +67,8 @@ class RepositoryMappingTest {
     private fun shoeEntity(
         photoUri: String?,
         retired: Boolean,
+        purchasePriceWon: Long? = null,
+        listPriceWon: Long? = null,
     ) = ShoeEntity(
         id = 7,
         brand = "Fictional",
@@ -56,6 +77,8 @@ class RepositoryMappingTest {
         color = "검정",
         purchaseDateEpochDay = null,
         startDateEpochDay = null,
+        purchasePriceWon = purchasePriceWon,
+        listPriceWon = listPriceWon,
         initialMeters = 3_000,
         targetMeters = 500_000,
         photoUri = photoUri,

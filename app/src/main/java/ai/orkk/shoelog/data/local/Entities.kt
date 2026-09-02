@@ -15,6 +15,8 @@ data class ShoeEntity(
     val color: String,
     val purchaseDateEpochDay: Long?,
     val startDateEpochDay: Long?,
+    val purchasePriceWon: Long? = null,
+    val listPriceWon: Long? = null,
     val initialMeters: Long,
     val targetMeters: Long,
     val photoUri: String?,

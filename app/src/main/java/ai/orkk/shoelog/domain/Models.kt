@@ -25,6 +25,8 @@ data class Shoe(
     val color: String = "",
     val purchaseDate: LocalDate? = null,
     val startDate: LocalDate? = null,
+    val purchasePriceWon: Long? = null,
+    val listPriceWon: Long? = null,
     val initialMeters: Long = 0,
     val targetMeters: Long,
     val photoUri: String? = null,

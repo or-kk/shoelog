@@ -4,6 +4,11 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import ai.orkk.shoelog.data.repository.ShoeDraft
+import ai.orkk.shoelog.data.repository.ShoeRepository
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -76,6 +81,28 @@ class ShoeLogDaoTest {
 
         assertEquals(1, dao.exerciseCount())
         assertEquals(8_000L, dao.exerciseById("health-connect-id")?.distanceMeters)
+    }
+
+    @Test
+    fun repositorySavesWonPrices() = runTest {
+        val repository = ShoeRepository(
+            dao = dao,
+            clock = Clock.fixed(Instant.parse("2026-09-02T00:00:00Z"), ZoneOffset.UTC),
+        )
+
+        val shoeId = repository.save(
+            shoeId = null,
+            draft = ShoeDraft(
+                brand = "Fictional",
+                model = "Price Test",
+                purchasePriceWon = 129_000,
+                listPriceWon = 169_000,
+            ),
+        )
+
+        val stored = requireNotNull(dao.shoeById(shoeId))
+        assertEquals(129_000L, stored.purchasePriceWon)
+        assertEquals(169_000L, stored.listPriceWon)
     }
 
     private fun shoe(

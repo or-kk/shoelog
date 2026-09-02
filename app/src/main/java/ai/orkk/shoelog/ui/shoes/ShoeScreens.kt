@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -26,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -39,7 +41,9 @@ import ai.orkk.shoelog.ui.ExerciseRow
 import ai.orkk.shoelog.ui.LoadingState
 import ai.orkk.shoelog.ui.ShoeMileageCard
 import ai.orkk.shoelog.ui.formatDistance
+import java.text.NumberFormat
 import java.time.LocalDate
+import java.util.Locale
 import kotlin.math.roundToLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,6 +64,8 @@ data class ShoeEditorForm(
     val color: String = "",
     val purchaseDate: String = "",
     val startDate: String = "",
+    val purchasePriceWon: String = "",
+    val listPriceWon: String = "",
     val initialKm: String = "0",
     val targetKm: String = "500",
     val photoUri: String? = null,
@@ -79,6 +85,12 @@ data class ShoeEditorForm(
         if (startDate.isNotBlank() && runCatching { LocalDate.parse(startDate) }.isFailure) {
             put("startDate", "YYYY-MM-DD 형식으로 입력해 주세요.")
         }
+        if (purchasePriceWon.isNotBlank() && purchasePriceWon.toLongOrNull()?.takeIf { it >= 0 } == null) {
+            put("purchasePriceWon", "0 이상의 원화 정수를 입력해 주세요.")
+        }
+        if (listPriceWon.isNotBlank() && listPriceWon.toLongOrNull()?.takeIf { it >= 0 } == null) {
+            put("listPriceWon", "0 이상의 원화 정수를 입력해 주세요.")
+        }
     }
 
     fun toDraft(): ShoeDraft {
@@ -90,6 +102,8 @@ data class ShoeEditorForm(
             color = color.trim(),
             purchaseDate = purchaseDate.takeIf(String::isNotBlank)?.let(LocalDate::parse),
             startDate = startDate.takeIf(String::isNotBlank)?.let(LocalDate::parse),
+            purchasePriceWon = purchasePriceWon.takeIf(String::isNotBlank)?.toLong(),
+            listPriceWon = listPriceWon.takeIf(String::isNotBlank)?.toLong(),
             initialMeters = (initialKm.toDouble() * 1_000).roundToLong(),
             targetMeters = (targetKm.toDouble() * 1_000).roundToLong(),
             photoUri = photoUri,
@@ -106,6 +120,8 @@ data class ShoeEditorForm(
             color = shoe.color,
             purchaseDate = shoe.purchaseDate?.toString().orEmpty(),
             startDate = shoe.startDate?.toString().orEmpty(),
+            purchasePriceWon = shoe.purchasePriceWon?.toString().orEmpty(),
+            listPriceWon = shoe.listPriceWon?.toString().orEmpty(),
             initialKm = formatEditableKm(shoe.initialMeters),
             targetKm = formatEditableKm(shoe.targetMeters),
             photoUri = shoe.photoUri,
@@ -241,6 +257,8 @@ fun ShoeDetailScreen(
                     Text("남은 거리 ${formatDistance(shoe.mileage.remainingMeters)}")
                     Text("색상 ${shoe.color.ifBlank { "미입력" }}")
                     Text("사용 시작일 ${shoe.startDate ?: "미입력"}")
+                    Text("구매가격 ${formatWon(shoe.purchasePriceWon)}")
+                    Text("정가 ${formatWon(shoe.listPriceWon)}")
                 }
             }
             item {
@@ -303,6 +321,24 @@ fun ShoeEditorScreen(
             item { EditorField("색상", form.color) { onFormChange(form.copy(color = it)) } }
             item { EditorField("구매일 (YYYY-MM-DD)", form.purchaseDate, "purchaseDate" in state.errors, state.errors["purchaseDate"]) { onFormChange(form.copy(purchaseDate = it)) } }
             item { EditorField("사용 시작일 (YYYY-MM-DD)", form.startDate, "startDate" in state.errors, state.errors["startDate"]) { onFormChange(form.copy(startDate = it)) } }
+            item {
+                EditorField(
+                    "구매가격 (원)",
+                    form.purchasePriceWon,
+                    "purchasePriceWon" in state.errors,
+                    state.errors["purchasePriceWon"],
+                    KeyboardOptions(keyboardType = KeyboardType.Number),
+                ) { onFormChange(form.copy(purchasePriceWon = it)) }
+            }
+            item {
+                EditorField(
+                    "정가 (원)",
+                    form.listPriceWon,
+                    "listPriceWon" in state.errors,
+                    state.errors["listPriceWon"],
+                    KeyboardOptions(keyboardType = KeyboardType.Number),
+                ) { onFormChange(form.copy(listPriceWon = it)) }
+            }
             item { EditorField("초기거리 (km)", form.initialKm, "initialKm" in state.errors, state.errors["initialKm"]) { onFormChange(form.copy(initialKm = it)) } }
             item { EditorField("교체 목표거리 (km)", form.targetKm, "targetKm" in state.errors, state.errors["targetKm"]) { onFormChange(form.copy(targetKm = it)) } }
             item {
@@ -329,6 +365,7 @@ private fun EditorField(
     value: String,
     isError: Boolean = false,
     error: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     onChange: (String) -> Unit,
 ) {
     OutlinedTextField(
@@ -337,6 +374,7 @@ private fun EditorField(
         label = { Text(label) },
         isError = isError,
         supportingText = { error?.let { Text(it) } },
+        keyboardOptions = keyboardOptions,
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
     )
@@ -350,3 +388,7 @@ private fun ToggleRow(label: String, checked: Boolean, onCheckedChange: (Boolean
     }
     HorizontalDivider()
 }
+
+private fun formatWon(amount: Long?): String = amount
+    ?.let { "${NumberFormat.getIntegerInstance(Locale.KOREA).format(it)}원" }
+    ?: "미입력"
