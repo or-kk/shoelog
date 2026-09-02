@@ -6,6 +6,7 @@ import ai.orkk.shoelog.data.health.AndroidHealthConnectDataSource
 import ai.orkk.shoelog.data.health.HealthConnectDataSource
 import ai.orkk.shoelog.data.local.ShoeLogDatabase
 import ai.orkk.shoelog.data.local.MIGRATION_1_2
+import ai.orkk.shoelog.data.local.MIGRATION_2_3
 import ai.orkk.shoelog.data.preferences.SettingsRepository
 import ai.orkk.shoelog.data.repository.ExerciseRepository
 import ai.orkk.shoelog.data.repository.RoomExerciseSyncStore
@@ -26,7 +27,7 @@ class AppContainer(application: Application) {
         application,
         ShoeLogDatabase::class.java,
         "shoelog.db",
-    ).addMigrations(MIGRATION_1_2).build()
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     private val dao = database.shoeLogDao()
 
     val settingsRepository = SettingsRepository(application)

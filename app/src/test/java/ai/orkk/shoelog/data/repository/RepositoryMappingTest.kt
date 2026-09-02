@@ -4,6 +4,8 @@ import ai.orkk.shoelog.data.local.ExerciseEntity
 import ai.orkk.shoelog.data.local.ExerciseWithShoeRow
 import ai.orkk.shoelog.data.local.ShoeEntity
 import ai.orkk.shoelog.data.local.ShoeMileageRow
+import ai.orkk.shoelog.domain.ShoeCategory
+import ai.orkk.shoelog.domain.ShoePurpose
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -47,6 +49,35 @@ class RepositoryMappingTest {
     }
 
     @Test
+    fun shoeMetadataMapsBetweenStorageAndDomain() {
+        val row = ShoeMileageRow(
+            shoe = shoeEntity(
+                photoUri = null,
+                retired = false,
+                categoryCode = "max-cushion",
+                purposeCodes = "daily,lsd",
+            ),
+            totalMeters = 0,
+            assignedExerciseCount = 0,
+        )
+
+        val shoe = row.toDomainShoe()
+
+        assertEquals(ShoeCategory.MAX_CUSHION, shoe.category)
+        assertEquals(setOf(ShoePurpose.DAILY, ShoePurpose.LSD), shoe.purposes)
+
+        val entity = ShoeDraft(
+            brand = "Fictional",
+            model = "Cloud Test",
+            category = shoe.category,
+            purposes = shoe.purposes,
+        ).toEntity(createdAt = 1, updatedAt = 2)
+
+        assertEquals("max-cushion", entity.categoryCode)
+        assertEquals("daily,lsd", entity.purposeCodes)
+    }
+
+    @Test
     fun distanceLessExerciseRemainsVisibleAndUnassigned() {
         val row = ExerciseWithShoeRow(
             exercise = exerciseEntity(distanceMeters = null),
@@ -69,6 +100,8 @@ class RepositoryMappingTest {
         retired: Boolean,
         purchasePriceWon: Long? = null,
         listPriceWon: Long? = null,
+        categoryCode: String? = null,
+        purposeCodes: String = "",
     ) = ShoeEntity(
         id = 7,
         brand = "Fictional",
@@ -84,6 +117,8 @@ class RepositoryMappingTest {
         photoUri = photoUri,
         retired = retired,
         defaultShoe = false,
+        categoryCode = categoryCode,
+        purposeCodes = purposeCodes,
         createdAtEpochMillis = 1_700_000_000_000,
         updatedAtEpochMillis = 1_700_000_100_000,
     )

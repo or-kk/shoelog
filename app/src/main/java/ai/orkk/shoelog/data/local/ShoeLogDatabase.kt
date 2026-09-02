@@ -9,7 +9,7 @@ import androidx.room.RoomDatabase
         ExerciseEntity::class,
         ExerciseShoeAssignmentEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class ShoeLogDatabase : RoomDatabase() {

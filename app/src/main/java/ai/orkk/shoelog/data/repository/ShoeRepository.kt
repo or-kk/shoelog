@@ -2,9 +2,12 @@ package ai.orkk.shoelog.data.repository
 
 import ai.orkk.shoelog.data.local.ShoeEntity
 import ai.orkk.shoelog.data.local.ShoeLogDao
+import ai.orkk.shoelog.data.local.ShoeMetadataCodec
 import ai.orkk.shoelog.data.local.ShoeMileageRow
 import ai.orkk.shoelog.domain.MileageCalculator
 import ai.orkk.shoelog.domain.Shoe
+import ai.orkk.shoelog.domain.ShoeCategory
+import ai.orkk.shoelog.domain.ShoePurpose
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -26,6 +29,8 @@ data class ShoeDraft(
     val photoUri: String? = null,
     val retired: Boolean = false,
     val defaultShoe: Boolean = false,
+    val category: ShoeCategory? = null,
+    val purposes: Set<ShoePurpose> = emptySet(),
 )
 
 class ShoeRepository(
@@ -92,6 +97,8 @@ internal fun ShoeMileageRow.toDomainShoe(): Shoe = Shoe(
     photoUri = shoe.photoUri,
     retired = shoe.retired,
     defaultShoe = shoe.defaultShoe,
+    category = ShoeMetadataCodec.decodeCategory(shoe.categoryCode),
+    purposes = ShoeMetadataCodec.decodePurposes(shoe.purposeCodes),
     createdAt = Instant.ofEpochMilli(shoe.createdAtEpochMillis),
     updatedAt = Instant.ofEpochMilli(shoe.updatedAtEpochMillis),
     mileage = MileageCalculator.calculate(totalMeters, emptyList(), shoe.targetMeters),
@@ -112,7 +119,7 @@ private fun ShoeDraft.normalizedAndValidated(): ShoeDraft {
     return normalized
 }
 
-private fun ShoeDraft.toEntity(
+internal fun ShoeDraft.toEntity(
     id: Long = 0,
     createdAt: Long,
     updatedAt: Long,
@@ -133,4 +140,6 @@ private fun ShoeDraft.toEntity(
     defaultShoe = defaultShoe,
     createdAtEpochMillis = createdAt,
     updatedAtEpochMillis = updatedAt,
+    categoryCode = category?.code,
+    purposeCodes = ShoeMetadataCodec.encodePurposes(purposes),
 )

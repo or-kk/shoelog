@@ -24,6 +24,8 @@ data class ShoeEntity(
     val defaultShoe: Boolean,
     val createdAtEpochMillis: Long,
     val updatedAtEpochMillis: Long,
+    val categoryCode: String? = null,
+    val purposeCodes: String = "",
 )
 
 @Entity(

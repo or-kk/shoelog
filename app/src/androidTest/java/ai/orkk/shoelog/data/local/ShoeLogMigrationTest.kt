@@ -53,6 +53,43 @@ class ShoeLogMigrationTest {
         }
     }
 
+    @Test
+    fun migrationFrom2To3PreservesExistingDataAndAddsEmptyMetadata() {
+        helper.createDatabase(TEST_DATABASE, 2).apply {
+            execSQL(
+                """
+                INSERT INTO shoes (
+                    id, brand, model, nickname, color, purchaseDateEpochDay,
+                    startDateEpochDay, purchasePriceWon, listPriceWon, initialMeters,
+                    targetMeters, photoUri, retired, defaultShoe,
+                    createdAtEpochMillis, updatedAtEpochMillis
+                ) VALUES (
+                    7, 'Fictional', 'Migration Runner', '', '', NULL,
+                    NULL, 129000, 169000, 3000, 500000, NULL, 0, 1, 1, 2
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val migrated = helper.runMigrationsAndValidate(
+            TEST_DATABASE,
+            3,
+            true,
+            MIGRATION_2_3,
+        )
+
+        migrated.query(
+            "SELECT brand, purchasePriceWon, categoryCode, purposeCodes FROM shoes WHERE id = 7",
+        ).use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Fictional", cursor.getString(0))
+            assertEquals(129_000L, cursor.getLong(1))
+            assertTrue(cursor.isNull(2))
+            assertEquals("", cursor.getString(3))
+        }
+    }
+
     private companion object {
         const val TEST_DATABASE = "shoelog-migration-test"
     }
