@@ -1,6 +1,8 @@
 package ai.orkk.shoelog.ui.shoes
 
 import ai.orkk.shoelog.domain.Shoe
+import ai.orkk.shoelog.domain.ShoeCategory
+import ai.orkk.shoelog.domain.ShoePurpose
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -95,5 +97,34 @@ class ShoeEditorViewModelTest {
 
         assertEquals("129000", form.purchasePriceWon)
         assertEquals("169000", form.listPriceWon)
+    }
+
+    @Test
+    fun metadataConvertsToDraftAndBackToEditableForm() {
+        val form = ShoeEditorForm(
+            brand = "ASICS",
+            model = "Sample",
+            category = ShoeCategory.MAX_CUSHION,
+            purposes = setOf(ShoePurpose.DAILY, ShoePurpose.LSD),
+        )
+
+        val draft = form.toDraft()
+
+        assertEquals(ShoeCategory.MAX_CUSHION, draft.category)
+        assertEquals(setOf(ShoePurpose.DAILY, ShoePurpose.LSD), draft.purposes)
+
+        val existing = Shoe(
+            id = 7,
+            brand = "ASICS",
+            model = "Sample",
+            targetMeters = 500_000,
+            category = draft.category,
+            purposes = draft.purposes,
+            createdAt = Instant.parse("2026-09-01T00:00:00Z"),
+            updatedAt = Instant.parse("2026-09-01T00:00:00Z"),
+        )
+
+        assertEquals(form.category, ShoeEditorForm.from(existing).category)
+        assertEquals(form.purposes, ShoeEditorForm.from(existing).purposes)
     }
 }
