@@ -13,6 +13,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -146,7 +147,15 @@ fun HomeScreen(
                 )
             }
         } else {
-            item { Text("내 러닝화", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text("내 러닝화", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = onAddShoe) { Text("러닝화 추가") }
+                }
+            }
             items(state.shoes, key = { it.id }) { shoe ->
                 ShoeMileageCard(shoe = shoe, onClick = { onOpenShoe(shoe.id) })
             }

@@ -4,10 +4,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import ai.orkk.shoelog.domain.Exercise
+import ai.orkk.shoelog.domain.Shoe
 import ai.orkk.shoelog.ui.home.HomeScreen
 import ai.orkk.shoelog.ui.home.HomeUiState
 import java.time.Instant
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -75,5 +78,35 @@ class HomeScreenTest {
         }
 
         composeRule.onNodeWithText("러닝화 추가").assertIsDisplayed()
+    }
+
+    @Test
+    fun existingShoesStillOfferAnotherShoeRegistration() {
+        var addRequested = false
+        composeRule.setContent {
+            HomeScreen(
+                state = HomeUiState(
+                    isLoading = false,
+                    shoes = listOf(
+                        Shoe(
+                            id = 1,
+                            brand = "Fictional",
+                            model = "First Runner",
+                            targetMeters = 500_000,
+                            createdAt = Instant.parse("2026-09-01T00:00:00Z"),
+                            updatedAt = Instant.parse("2026-09-01T00:00:00Z"),
+                        ),
+                    ),
+                ),
+                onRefresh = {},
+                onAddShoe = { addRequested = true },
+                onOpenShoe = {},
+                onOpenExercises = {},
+            )
+        }
+
+        composeRule.onNodeWithText("러닝화 추가").performClick()
+
+        composeRule.runOnIdle { assertTrue(addRequested) }
     }
 }
