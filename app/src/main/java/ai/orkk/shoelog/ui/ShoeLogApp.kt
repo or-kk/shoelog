@@ -73,7 +73,11 @@ private val mainDestinations = listOf(
 )
 
 @Composable
-fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
+fun ShoeLogApp(
+    container: AppContainer,
+    initialExerciseId: String? = null,
+    initialRoute: String = Routes.HOME,
+) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
@@ -109,7 +113,7 @@ fun ShoeLogApp(container: AppContainer, initialExerciseId: String? = null) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.HOME,
+            startDestination = initialRoute,
             modifier = Modifier.padding(innerPadding),
         ) {
             composable(Routes.HOME) {

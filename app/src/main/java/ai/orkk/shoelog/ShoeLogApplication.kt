@@ -16,11 +16,53 @@ import ai.orkk.shoelog.data.repository.ShoeRepository
 import ai.orkk.shoelog.data.repository.SyncRepository
 import ai.orkk.shoelog.data.repository.SyncSettings
 import ai.orkk.shoelog.notification.RunNotificationManager
+import ai.orkk.shoelog.widget.MileageRankingWidget
+import androidx.glance.appwidget.updateAll
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class ShoeLogApplication : Application() {
     val container: AppContainer by lazy { AppContainer(this) }
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    override fun onCreate() {
+        super.onCreate()
+        applicationScope.launch {
+            container.shoeRepository.observeShoes()
+                .map { shoes ->
+                    shoes.map { shoe ->
+                        MileageWidgetSnapshot(
+                            id = shoe.id,
+                            nickname = shoe.nickname,
+                            brand = shoe.brand,
+                            model = shoe.model,
+                            totalMeters = shoe.mileage.totalMeters,
+                            targetMeters = shoe.targetMeters,
+                        )
+                    }
+                }
+                .distinctUntilChanged()
+                .catch { /* Periodic widget refresh remains available if Room cannot be read. */ }
+                .collect { MileageRankingWidget().updateAll(this@ShoeLogApplication) }
+        }
+    }
 }
+
+private data class MileageWidgetSnapshot(
+    val id: Long,
+    val nickname: String,
+    val brand: String,
+    val model: String,
+    val totalMeters: Long,
+    val targetMeters: Long,
+)
 
 class AppContainer(application: Application) {
     private val database = Room.databaseBuilder(

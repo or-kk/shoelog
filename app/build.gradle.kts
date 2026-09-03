@@ -65,6 +65,7 @@ dependencies {
     implementation(platform(libs.kotlinx.serialization.bom))
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.health.connect.client)
+    implementation(libs.androidx.glance.appwidget)
     ksp(libs.androidx.room.compiler)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -74,6 +75,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.glance.testing)
+    androidTestImplementation(libs.androidx.glance.appwidget.testing)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
 }

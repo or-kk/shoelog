@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">ShoeLog</string>
+    <string name="mileage_ranking_widget_description">러닝화별 누적 마일리지 순위</string>
 </resources>

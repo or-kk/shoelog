@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import ai.orkk.shoelog.ui.ShoeLogApp
+import ai.orkk.shoelog.ui.Routes
 import ai.orkk.shoelog.ui.theme.ShoeLogTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,6 +18,11 @@ class MainActivity : ComponentActivity() {
                 ShoeLogApp(
                     container = container,
                     initialExerciseId = intent.getStringExtra(EXTRA_EXERCISE_ID),
+                    initialRoute = if (intent.getBooleanExtra(EXTRA_OPEN_SHOE_MANAGEMENT, false)) {
+                        Routes.SHOES
+                    } else {
+                        Routes.HOME
+                    },
                 )
             }
         }
@@ -24,5 +30,6 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_EXERCISE_ID = "ai.orkk.shoelog.extra.EXERCISE_ID"
+        const val EXTRA_OPEN_SHOE_MANAGEMENT = "ai.orkk.shoelog.extra.OPEN_SHOE_MANAGEMENT"
     }
 }
