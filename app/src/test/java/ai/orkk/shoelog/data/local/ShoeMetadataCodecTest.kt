@@ -27,4 +27,12 @@ class ShoeMetadataCodecTest {
         )
         assertNull(ShoeMetadataCodec.decodeCategory("future-category"))
     }
+
+    @Test
+    fun nonPlateUsesTheCorrectStableCodeAndLabel() {
+        val category = ShoeMetadataCodec.decodeCategory("non-plate")
+
+        assertEquals("논플레이트", category?.displayName)
+        assertNull(ShoeMetadataCodec.decodeCategory("high-plate"))
+    }
 }

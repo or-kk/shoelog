@@ -14,7 +14,7 @@ class ShoeMetadataTest {
                 .toSet(),
         )
         assertEquals(
-            setOf("높은 플레이트", "라이트 플레이트", "카본 플레이트"),
+            setOf("논플레이트", "라이트 플레이트", "카본 플레이트"),
             ShoeCategory.entries
                 .filter { it.group == ShoeCategoryGroup.SUPER_TRAINER }
                 .map { it.displayName }

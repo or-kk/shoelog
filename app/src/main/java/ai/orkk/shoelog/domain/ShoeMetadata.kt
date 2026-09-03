@@ -16,7 +16,7 @@ enum class ShoeCategory(
     STABILITY("stability", ShoeCategoryGroup.DAILY, "안정화"),
     ALL_ROUNDER("all-rounder", ShoeCategoryGroup.DAILY, "올라운더"),
     LIGHTWEIGHT_TRAINER("lightweight-trainer", ShoeCategoryGroup.DAILY, "경량 트레이너"),
-    HIGH_PLATE("high-plate", ShoeCategoryGroup.SUPER_TRAINER, "높은 플레이트"),
+    NON_PLATE("non-plate", ShoeCategoryGroup.SUPER_TRAINER, "논플레이트"),
     LIGHT_PLATE("light-plate", ShoeCategoryGroup.SUPER_TRAINER, "라이트 플레이트"),
     CARBON_PLATE("carbon-plate", ShoeCategoryGroup.SUPER_TRAINER, "카본 플레이트"),
     MIDDLE_DISTANCE("middle-distance", ShoeCategoryGroup.RACING, "중거리"),
